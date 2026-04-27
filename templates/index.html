@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Monitor SEACE · Bienes · Agente IA</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;color:#111827}
+    .header{background:linear-gradient(135deg,#b91c1c,#991b1b);color:#fff;padding:20px 0 0}
+    .inner{max-width:960px;margin:0 auto;padding:0 16px}
+    .htop{display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+    .htop h1{font-size:18px;font-weight:800}
+    .ai-badge{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700}
+    .hsub{font-size:12px;opacity:.8;margin-bottom:14px;line-height:1.5}
+    .body{max-width:960px;margin:0 auto;padding:14px 16px}
+
+    /* Keywords panel */
+    .kw-panel{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+    .kw-title{font-size:13px;font-weight:700;color:#374151;margin-bottom:10px}
+    .kw-input-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+    .kw-input{flex:1;min-width:160px;padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;font-size:13px;outline:none}
+    .btn-add-kw{padding:8px 14px;background:#b91c1c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px}
+    .kw-tags{display:flex;gap:6px;flex-wrap:wrap}
+    .kw-tag{display:flex;align-items:center;gap:5px;background:#fee2e2;color:#991b1b;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600}
+    .kw-tag button{background:none;border:none;cursor:pointer;color:#991b1b;font-size:14px;line-height:1;padding:0}
+    .kw-empty{font-size:12px;color:#9ca3af;font-style:italic}
+
+    /* KPIs */
+    .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+    .kpi{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+    .kpi-icon{font-size:20px;margin-bottom:4px}
+    .kpi-val{font-size:20px;font-weight:800}
+    .kpi-label{font-size:11px;color:#6b7280}
+
+    /* Toolbar */
+    .toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+    .search{flex:1;min-width:160px;padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;font-size:13px;outline:none}
+    .btn{padding:8px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px}
+    .btn-enviar{background:#b91c1c;color:#fff}
+    .btn-copy{background:#f3f4f6;color:#374151}
+    .btn-copy.ok{background:#16a34a;color:#fff}
+
+    /* Alerts */
+    .alert{border-radius:8px;padding:9px 14px;font-size:13px;margin-bottom:10px}
+    .alert-ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+    .alert-err{background:#fee2e2;border:1px solid #fca5a5;color:#991b1b}
+    .alert-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;font-size:12px}
+
+    /* Loading */
+    .agent-loading{text-align:center;padding:40px 20px}
+    .agent-icon{font-size:40px;margin-bottom:10px;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .agent-steps{display:flex;flex-direction:column;gap:6px;max-width:340px;margin:14px auto 0;text-align:left}
+    .step{display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;padding:6px 10px;border-radius:8px;background:#f9fafb}
+    .step.active{background:#eff6ff;color:#1e40af;font-weight:600}
+    .step.done{background:#f0fdf4;color:#166534}
+
+    /* Cards */
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:11px;margin-bottom:9px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);transition:box-shadow .15s}
+    .card:hover{box-shadow:0 4px 14px rgba(0,0,0,.10)}
+    .card-head{padding:13px 15px;cursor:pointer;display:flex;gap:11px;align-items:flex-start}
+    .card-num{min-width:26px;height:26px;border-radius:6px;background:#f0fdf4;color:#16a34a;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .card-info{flex:1;min-width:0}
+    .card-title{font-weight:700;color:#111827;font-size:14px;margin-bottom:3px;line-height:1.4;word-break:break-word}
+    .card-sub{font-size:12px;color:#6b7280;margin-bottom:5px}
+    .badges{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+    .badge{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+    .b-green{background:#d1fae5;color:#065f46}
+    .b-blue{background:#dbeafe;color:#1e40af}
+    .b-amber{background:#fef3c7;color:#92400e}
+    .b-red{background:#fee2e2;color:#991b1b}
+    .b-gray{background:#f3f4f6;color:#374151}
+    .card-arrow{color:#9ca3af;font-size:13px;margin-top:5px;flex-shrink:0}
+
+    /* Detail */
+    .card-detail{border-top:1px solid #f3f4f6;padding:12px 15px 15px;background:#fafafa;display:none}
+    .card-detail.open{display:block}
+    .drow{display:flex;gap:8px;margin-bottom:5px;font-size:13px}
+    .dlabel{color:#9ca3af;min-width:90px;flex-shrink:0;font-size:12px}
+    .dval{color:#111827;word-break:break-word}
+
+    /* Precio historico */
+    .precio-box{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-top:12px}
+    .precio-title{font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+    .precio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+    .precio-item{text-align:center;background:#f9fafb;border-radius:8px;padding:8px}
+    .precio-item .val{font-size:15px;font-weight:800;color:#065f46}
+    .precio-item .lbl{font-size:10px;color:#6b7280;margin-top:2px}
+    .recomendacion{background:#eff6ff;border-radius:8px;padding:10px 12px;font-size:12px;color:#1e40af;line-height:1.5}
+    .recomendacion.comp{background:#f0fdf4;color:#166534}
+    .recomendacion.nocomp{background:#fffbeb;color:#92400e}
+
+    /* Docs */
+    .docs-title{font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px}
+    .doc-item{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e5e7eb;border-radius:7px;padding:7px 10px;margin-bottom:5px}
+    .doc-name{flex:1;font-size:12px;color:#111827;word-break:break-word}
+    .doc-btn{flex-shrink:0;padding:3px 9px;background:#b91c1c;color:#fff;border-radius:5px;font-size:11px;font-weight:600;text-decoration:none}
+    .no-docs{font-size:12px;color:#9ca3af;font-style:italic;margin-top:6px}
+    .seace-link{display:inline-block;margin-top:8px;font-size:12px;color:#2563eb;text-decoration:underline}
+
+    /* Modal */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+    .modal{background:#fff;border-radius:14px;padding:22px;width:100%;max-width:390px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    .modal h2{font-size:17px;margin-bottom:5px}
+    .modal p{font-size:13px;color:#6b7280;margin-bottom:10px}
+    .modal-btns{display:flex;gap:8px}
+    .btn-send{flex:1;padding:10px;background:#b91c1c;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px}
+    .btn-send:disabled{background:#9ca3af;cursor:not-allowed}
+    .btn-cancel{padding:10px 14px;background:#f3f4f6;border:none;border-radius:8px;cursor:pointer;font-size:14px}
+    .stats{font-size:13px;color:#6b7280;margin-bottom:8px}
+
+    @media(max-width:600px){.htop h1{font-size:15px}.kpi-val{font-size:17px}.precio-grid{grid-template-columns:repeat(3,1fr)}}
+  </style>
+</head>
+<body>
+
+<div id="warn-gemini" style="display:none;background:#92400e;color:#fff;font-size:12px;text-align:center;padding:8px 16px">
+  ⚠️ GEMINI_API_KEY no configurada — el agente IA no podra extraer datos del SEACE.
+</div>
+<div id="warn-gmail" style="display:none;background:#1e3a5f;color:#93c5fd;font-size:12px;text-align:center;padding:8px 16px">
+  ⚠️ Gmail no configurado — el envio automatico no funcionara.
+</div>
+
+<div class="header">
+  <div class="inner">
+    <div class="htop">
+      <span style="font-size:26px">🇵🇪</span>
+      <div style="flex:1">
+        <div style="font-size:10px;opacity:.7;letter-spacing:.12em;text-transform:uppercase">OSCE · SEACE · Peru</div>
+        <h1>Monitor de Contratos Menores ≤ 8 UIT</h1>
+      </div>
+      <span class="ai-badge">🤖 Agente IA · Gemini</span>
+    </div>
+    <p class="hsub">Bienes y materiales · Analisis de precios historicos · Excel a <strong>Muros8478@gmail.com</strong> cada <strong>7 horas</strong></p>
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- Panel de palabras clave -->
+  <div class="kw-panel">
+    <div class="kw-title">🔍 Filtrar por mi rubro de bienes</div>
+    <div class="kw-input-row">
+      <input class="kw-input" id="kw-input" placeholder="Ej: materiales, limpieza, equipos, impresion..." onkeydown="if(event.key==='Enter')agregarKw()"/>
+      <button class="btn-add-kw" onclick="agregarKw()">+ Agregar</button>
+      <button class="btn" style="background:#f3f4f6;color:#374151" onclick="guardarKeywords()">💾 Guardar filtros</button>
+    </div>
+    <div class="kw-tags" id="kw-tags">
+      <span class="kw-empty">Sin filtros — se muestran todos los bienes</span>
+    </div>
+    <div id="kw-msg" style="display:none;font-size:12px;color:#166534;margin-top:6px"></div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis" id="kpis" style="display:none">
+    <div class="kpi"><div class="kpi-icon">📋</div><div class="kpi-val" id="k-total">0</div><div class="kpi-label">Convocatorias</div></div>
+    <div class="kpi"><div class="kpi-icon">💰</div><div class="kpi-val" id="k-monto">S/. 0</div><div class="kpi-label">Monto total</div></div>
+    <div class="kpi"><div class="kpi-icon">📎</div><div class="kpi-val" id="k-docs">0</div><div class="kpi-label">Documentos</div></div>
+  </div>
+
+  <!-- Loading -->
+  <div id="st-loading" class="agent-loading">
+    <div class="agent-icon">🤖</div>
+    <div style="font-size:15px;font-weight:700;color:#374151;margin-bottom:4px">Agente IA navegando el SEACE...</div>
+    <div style="font-size:13px;color:#9ca3af;margin-bottom:16px">Google Gemini extrayendo convocatorias de bienes</div>
+    <div class="agent-steps">
+      <div class="step done" id="s1">✅ Conectando con SEACE</div>
+      <div class="step active" id="s2">🔍 Extrayendo convocatorias del dia</div>
+      <div class="step" id="s3">📊 Analizando precios historicos</div>
+      <div class="step" id="s4">✅ Preparando resultados</div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="st-error" class="alert alert-err" style="display:none"></div>
+
+  <!-- Resultados -->
+  <div id="st-resultados" style="display:none">
+    <div id="msg-ok" class="alert alert-ok" style="display:none"></div>
+    <div class="alert alert-info">
+      🤖 <strong>Agente Gemini activo</strong> · Busca bienes en el SEACE cada 7 horas · Excel con analisis de precios a <strong>Muros8478@gmail.com</strong>
+    </div>
+    <div class="toolbar">
+      <input class="search" id="busqueda" placeholder="Filtrar por objeto, entidad o lugar..." oninput="filtrar()"/>
+      <button class="btn btn-copy" id="btn-copy" onclick="copiar()">📋 Copiar</button>
+      <button class="btn btn-enviar" onclick="abrirModal()">✉️ Enviar ahora</button>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="alert alert-info" style="margin-bottom:10px">
+      💡 Toca cada convocatoria para ver <strong>documentos, bases y analisis de precios historicos</strong>.
+    </div>
+    <div id="lista"></div>
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="modal" style="display:none" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <h2>✉️ Enviar reporte ahora</h2>
+    <p>Envia el Excel con convocatorias de bienes y analisis de precios a <strong>Muros8478@gmail.com</strong>.</p>
+    <div class="alert alert-info" style="margin-bottom:12px">📊 Incluye: objeto, entidad, lugar, monto, precio historico y recomendacion de cotizacion</div>
+    <div id="modal-ok" class="alert alert-ok" style="display:none;margin-bottom:10px"></div>
+    <div id="modal-err" class="alert alert-err" style="display:none;margin-bottom:10px"></div>
+    <div class="modal-btns">
+      <button class="btn-send" id="btn-send" onclick="enviarAhora()">📨 Enviar con Excel</button>
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let todos = [], filtrados = [], keywords = [];
+
+// Verificar config
+fetch("/api/config").then(r=>r.json()).then(cfg=>{
+  if(!cfg.gemini_configurado) document.getElementById("warn-gemini").style.display="block";
+  if(!cfg.gmail_configurado)  document.getElementById("warn-gmail").style.display="block";
+  keywords = cfg.keywords || [];
+  renderTags();
+}).catch(()=>{});
+
+// Animacion de pasos
+let paso = 1;
+const pasosIds = ["s1","s2","s3","s4"];
+const timerPasos = setInterval(()=>{
+  if(paso < pasosIds.length){
+    document.getElementById(pasosIds[paso-1]).className="step done";
+    document.getElementById(pasosIds[paso]).className="step active";
+    paso++;
+  }
+}, 2500);
+
+// Cargar al abrir
+cargar();
+
+async function cargar(){
+  try{
+    const res  = await fetch("/api/convocatorias");
+    const data = await res.json();
+    clearInterval(timerPasos);
+    pasosIds.forEach(p=>document.getElementById(p).className="step done");
+    if(!data.ok) throw new Error(data.error||"Error del agente");
+
+    todos = data.contratos||[];
+    keywords = data.keywords||[];
+    renderTags();
+    filtrados = [...todos];
+    actualizarKPIs();
+    renderLista();
+
+    document.getElementById("st-loading").style.display="none";
+    document.getElementById("st-resultados").style.display="block";
+    document.getElementById("kpis").style.display="grid";
+
+    const ok = document.getElementById("msg-ok");
+    ok.style.display="block";
+    ok.textContent = `✅ Agente Gemini extrajo ${todos.length} convocatorias de bienes · ${data.fecha}`;
+  }catch(e){
+    clearInterval(timerPasos);
+    document.getElementById("st-loading").style.display="none";
+    document.getElementById("st-error").style.display="block";
+    document.getElementById("st-error").innerHTML=
+      `<strong>⚠️ ${e.message}</strong><br>
+       <small style="display:block;margin-top:6px">Consulta: <a href="https://prod6.seace.gob.pe/buscador-publico/contrataciones" target="_blank" style="color:#991b1b;font-weight:700">SEACE</a></small>`;
+  }
+}
+
+// ── Keywords ──
+function renderTags(){
+  const cont = document.getElementById("kw-tags");
+  if(!keywords.length){
+    cont.innerHTML='<span class="kw-empty">Sin filtros — se muestran todos los bienes</span>';
+    return;
+  }
+  cont.innerHTML = keywords.map((k,i)=>
+    `<span class="kw-tag">${k}<button onclick="eliminarKw(${i})">×</button></span>`
+  ).join("");
+}
+
+function agregarKw(){
+  const input = document.getElementById("kw-input");
+  const val = input.value.trim();
+  if(!val) return;
+  if(!keywords.includes(val)) keywords.push(val);
+  input.value = "";
+  renderTags();
+}
+
+function eliminarKw(i){
+  keywords.splice(i,1);
+  renderTags();
+}
+
+async function guardarKeywords(){
+  const msg = document.getElementById("kw-msg");
+  try{
+    await fetch("/api/keywords",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keywords})});
+    msg.style.display="block";
+    msg.textContent="✅ Filtros guardados. Se aplicaran en el proximo envio automatico.";
+    setTimeout(()=>msg.style.display="none", 3000);
+    // Recargar con nuevos filtros
+    document.getElementById("st-resultados").style.display="none";
+    document.getElementById("st-loading").style.display="block";
+    cargar();
+  }catch(e){
+    msg.style.display="block";
+    msg.style.color="#991b1b";
+    msg.textContent="Error guardando filtros.";
+  }
+}
+
+// ── KPIs ──
+function actualizarKPIs(){
+  document.getElementById("k-total").textContent = filtrados.length;
+  const monto = filtrados.reduce((s,c)=>{
+    try{ return s+parseFloat(String(c.monto||"0").replace(/[^0-9.]/g,"")||0); }catch{return s;}
+  },0);
+  document.getElementById("k-monto").textContent = `S/. ${monto.toLocaleString("es-PE",{minimumFractionDigits:2})}`;
+  document.getElementById("k-docs").textContent = filtrados.reduce((s,c)=>s+(c.documentos||[]).length,0);
+}
+
+function filtrar(){
+  const q=(document.getElementById("busqueda").value||"").toLowerCase();
+  filtrados = q ? todos.filter(c=>
+    (c.objeto||"").toLowerCase().includes(q)||
+    (c.entidad||"").toLowerCase().includes(q)||
+    (c.lugar||"").toLowerCase().includes(q)
+  ) : [...todos];
+  actualizarKPIs();
+  renderLista();
+}
+
+// ── Render lista ──
+function renderLista(){
+  const lista = document.getElementById("lista");
+  document.getElementById("stats").textContent =
+    `Mostrando ${filtrados.length} de ${todos.length} convocatorias de bienes`;
+
+  if(!filtrados.length){
+    lista.innerHTML='<div style="text-align:center;padding:30px;color:#9ca3af;font-size:14px">Sin resultados. El SEACE publica contratos principalmente entre 9am y 4pm hora Peru.</div>';
+    return;
+  }
+
+  lista.innerHTML = filtrados.map((c,i)=>{
+    let monto="—";
+    try{
+      const v=parseFloat(String(c.monto||"0").replace(/[^0-9.]/g,"")||0);
+      if(v>0) monto=`S/. ${v.toLocaleString("es-PE",{minimumFractionDigits:2})}`;
+    }catch{}
+
+    const ph = c.precio_historico || {};
+    const esComp = ph.es_competitivo;
+    const precioBadge = esComp===true
+      ? '<span class="badge b-green">✅ Precio competitivo</span>'
+      : esComp===false
+      ? '<span class="badge b-amber">⚠️ Revisar precio</span>'
+      : '<span class="badge b-gray">📊 Analisis disponible</span>';
+
+    const docsBadge = (c.documentos||[]).length
+      ? `<span class="badge b-blue">📎 ${c.documentos.length} docs</span>` : "";
+
+    // Precio historico box
+    let precioBox = "";
+    if(ph && (ph.precio_promedio || ph.recomendacion)){
+      const fmtP = (v) => {
+        try{ return `S/. ${parseFloat(String(v).replace(/[^0-9.]/g,"")||0).toLocaleString("es-PE",{minimumFractionDigits:2})}`; }
+        catch{ return v||"-"; }
+      };
+      const recClass = esComp===true?"recomendacion comp":esComp===false?"recomendacion nocomp":"recomendacion";
+      precioBox = `
+        <div class="precio-box">
+          <div class="precio-title">📊 Analisis de precios historicos en el SEACE</div>
+          <div class="precio-grid">
+            <div class="precio-item"><div class="val">${fmtP(ph.precio_minimo)}</div><div class="lbl">Precio minimo</div></div>
+            <div class="precio-item"><div class="val">${fmtP(ph.precio_promedio)}</div><div class="lbl">Precio promedio</div></div>
+            <div class="precio-item"><div class="val">${fmtP(ph.precio_maximo)}</div><div class="lbl">Precio maximo</div></div>
+          </div>
+          <div class="${recClass}">
+            💡 <strong>Recomendacion:</strong> ${ph.recomendacion||"Sin datos disponibles"}
+          </div>
+          ${ph.num_contratos?`<div style="font-size:11px;color:#9ca3af;margin-top:6px">Basado en ~${ph.num_contratos} contratos similares en el SEACE</div>`:""}
+        </div>`;
+    }
+
+    const docsHtml = (c.documentos||[]).length
+      ? `<div class="docs-title">📎 Documentos y Bases (${c.documentos.length})</div>
+         ${c.documentos.map(d=>`
+           <div class="doc-item">
+             <span>📄</span>
+             <span class="doc-name">${d.nombre||"Documento"}</span>
+             ${d.url?`<a href="${d.url}" target="_blank" class="doc-btn">Descargar →</a>`:""}
+           </div>`).join("")}`
+      : '<div class="no-docs">Sin documentos registrados.</div>';
+
+    const rows=[
+      ["N° Orden", c.numero],
+      ["Tipo",     c.tipo],
+      ["Lugar",    c.lugar],
+      ["Entidad",  c.entidad],
+      ["Monto",    monto],
+      ["Fecha",    c.fecha],
+    ].filter(([,v])=>v&&v!=="-").map(([l,v])=>`
+      <div class="drow"><span class="dlabel">${l}:</span><span class="dval">${v}</span></div>`).join("");
+
+    return `
+    <div class="card">
+      <div class="card-head" onclick="toggle(${i})">
+        <div class="card-num">${i+1}</div>
+        <div class="card-info">
+          <div class="card-title">${c.objeto||"Sin descripcion"}</div>
+          <div class="card-sub">🏛 ${c.entidad||"—"} · 📍 ${c.lugar||"—"}</div>
+          <div class="badges">
+            ${monto!=="—"?`<span class="badge b-green">${monto}</span>`:""}
+            ${precioBadge}
+            ${docsBadge}
+            ${c.fecha?`<span style="font-size:11px;color:#9ca3af">📅 ${c.fecha}</span>`:""}
+          </div>
+        </div>
+        <span class="card-arrow" id="arr-${i}">▼</span>
+      </div>
+      <div class="card-detail" id="det-${i}">
+        ${rows}
+        ${precioBox}
+        ${docsHtml}
+        ${c.urlSeace?`<a href="${c.urlSeace}" target="_blank" class="seace-link">Ver en SEACE →</a>`:""}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function toggle(i){
+  const det=document.getElementById(`det-${i}`);
+  const arr=document.getElementById(`arr-${i}`);
+  det.classList.toggle("open");
+  arr.textContent=det.classList.contains("open")?"▲":"▼";
+}
+
+function copiar(){
+  const lines=[
+    "CONVOCATORIAS CONTRATOS MENORES BIENES - SEACE PERU",
+    `Fecha: ${new Date().toLocaleDateString("es-PE")} | Total: ${filtrados.length}`,
+    "─".repeat(60),
+    ...filtrados.map((c,i)=>{
+      const ph=c.precio_historico||{};
+      return [
+        `${i+1}. ${c.objeto||"Sin descripcion"}`,
+        `   Entidad: ${c.entidad||"—"}`,
+        `   Lugar  : ${c.lugar||"—"}`,
+        `   Monto  : ${c.monto?"S/. "+c.monto:"—"}`,
+        ph.precio_promedio?`   Precio historico promedio: S/. ${ph.precio_promedio}`:"",
+        ph.recomendacion?`   Recomendacion: ${ph.recomendacion}`:"",
+        ""
+      ].filter(Boolean).join("\n");
+    }),
+    "Fuente: SEACE · prod6.seace.gob.pe"
+  ].join("\n");
+  navigator.clipboard.writeText(lines);
+  const btn=document.getElementById("btn-copy");
+  btn.textContent="✅ Copiado"; btn.classList.add("ok");
+  setTimeout(()=>{btn.textContent="📋 Copiar";btn.classList.remove("ok");},2000);
+}
+
+function abrirModal(){ document.getElementById("modal").style.display="flex"; }
+function cerrarModal(){
+  document.getElementById("modal").style.display="none";
+  document.getElementById("modal-ok").style.display="none";
+  document.getElementById("modal-err").style.display="none";
+}
+
+async function enviarAhora(){
+  const btn=document.getElementById("btn-send");
+  btn.disabled=true; btn.textContent="⏳ Enviando...";
+  try{
+    const res=await fetch("/api/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contratos:filtrados})});
+    const data=await res.json();
+    if(data.ok){
+      const ok=document.getElementById("modal-ok");
+      ok.style.display="block"; ok.textContent=`✅ ${data.message}`;
+    } else throw new Error(data.error);
+  }catch(e){
+    const err=document.getElementById("modal-err");
+    err.style.display="block"; err.textContent=`⚠️ ${e.message}`;
+  }
+  btn.disabled=false; btn.textContent="📨 Enviar con Excel";
+}
+</script>
+</body>
+</html>
